@@ -1,4 +1,4 @@
-./MainSource/Descriptor/
-./MainSource/Image/
-./MainSource/Keypoint/
-./MainSource/Signature/
+MainSource/Descriptor/
+MainSource/Image/
+MainSource/Keypoint/
+MainSource/Signature/
