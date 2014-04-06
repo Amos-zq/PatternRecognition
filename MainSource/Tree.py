@@ -15,10 +15,11 @@ class Tree:
         self.nleaves = nleaves
         
     def generate_tree(self, data):
-        [tree, A] = vl.vl_hikmeans(data, self.K, self.nleaves, verb=1)
+        [tr, A] = vl.vl_hikmeans(data, self.K, self.nleaves, verb=1)
         
-        print A[:, 100:500]
-        tree.save('./tree.vlhkm')
+        print A[:, 0:1000]
+            
+        tr.save('./tree.vlhkm')
         
         #save A in signature
         try:
@@ -34,10 +35,19 @@ if __name__=="__main__":
     for i in range(0, 180):
         desc.load_desc('./Descriptor/', 'desc_'+str(i))
         data[:, k:k+1000] = desc.desc
-        print file_name
+        print 'desc_'+str(i)
         k += 1000
         
     tree = Tree(10, 10000)
     tree.generate_tree(data)
+    
+    tr = vl._vlfeat.VlHIKMTree(0, 0)
+    tr.load('./tree.vlhkm')
+
+    At = vl.vl_hikmeanspush(tr, data[:, 0:1000])
+    
+    print At[:, 0:1000]
+    
+    print data[:, 0:1000]
     
     

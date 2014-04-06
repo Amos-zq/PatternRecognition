@@ -6,6 +6,8 @@ Created on Apr 5, 2014
 
 import numpy as np
 import os.path
+from Descriptor import Descriptor
+import vlfeat as vl
 
 class Signature:
     def generate_sign(self, A, K, depth):
@@ -53,17 +55,22 @@ class Signature:
 if __name__=="__main__":
 
     
-    #load A
-    try:
-        with open('./Signature/sign_1000', 'rb') as file_data:
-            A = np.load(file_data)
-    except IOError as ioerror:
-        print ioerror
      
     for i in range(0, 180):
+        #load keypoint
+        desc = Descriptor()
+        desc.load_desc('./Descriptor/', 'desc_'+str(i))
+    
+        #push down to the tree
+        #Load tree
+        tr = vl._vlfeat.VlHIKMTree(0, 0)
+        tr.load('./tree.vlhkm')
+        
+        At = vl.vl_hikmeanspush(tr, desc.desc)
+        
         sign = Signature() 
         k = i*1000  
-        sign.generate_sign(A[:,k:k+1000], 10, 4)
+        sign.generate_sign(At, 10, 4)
     
         sign.save_sign('./Signature/1000/', 'sign_'+str(i))
         print 'generate sign for desc ' + str(i)
