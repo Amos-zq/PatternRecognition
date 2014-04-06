@@ -1,6 +1,16 @@
 '''
 Created on Apr 5, 2014
 
+Keypoint class takes in the paramater of 
+    num of keypoints
+    width of image
+    height of image
+    sigma(scale)
+    orientation
+
+to randomly generate a set of keypoints, which is used for each
+image to calculate the descriptors
+
 @author: yulu
 '''
 
@@ -59,7 +69,7 @@ class Keypoint:
     def load_keypoint(self, file_dir, file_name):
         try:
             with open(os.path.join(file_dir, file_name), 'rb') as file_data:
-                np.load(file_data, self.kpt)
+                self.kpt = np.load(file_data)
                 
         except IOError as ioerr:
             print ioerr        
