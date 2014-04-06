@@ -10,7 +10,7 @@ import os.path
 class Signature:
     def generate_sign(self, A, K, depth):
         m, n = A.shape
-        L = (K**(depth+1)-1) / (K-1)
+        L = (K**(depth+1)-1) / (K-1) - 1
         
         self.sign = np.zeros(L)
         
@@ -45,7 +45,7 @@ class Signature:
     
     def load_sign(self, file_dir, file_name):
         try:
-            with open(os.path.join(file_dir, file_name), 'wb') as file_data:
+            with open(os.path.join(file_dir, file_name), 'rb') as file_data:
                 self.sign = np.load(file_data)
         except IOError as ioerror:
             print ioerror        

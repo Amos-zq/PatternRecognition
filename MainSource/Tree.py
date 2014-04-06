@@ -31,8 +31,8 @@ if __name__=="__main__":
     desc = Descriptor()
     data = np.empty(shape=(128, 180*1000))
     k = 0
-    for file_name in os.listdir('./Descriptor/'):
-        desc.load_desc('./Descriptor/', file_name)
+    for i in range(0, 180):
+        desc.load_desc('./Descriptor/', 'desc_'+str(i))
         data[:, k:k+1000] = desc.desc
         print file_name
         k += 1000
