@@ -12,7 +12,7 @@ class Keypoint:
                           num_of_kpt, 
                           width, 
                           height, 
-                          sigma = 6,
+                          sigma = 1,
                           orientation = 0):
         self.kpt = np.empty(shape=(4, num_of_kpt))
         '''
@@ -24,14 +24,16 @@ class Keypoint:
         
         r_range = range(rmin,rmax)
         p = [width*height - 2*(width+height)*k + 4*k**2 for k in r_range]
-        p_array = np.array(p)
+        p_array = np.array(p, dtype=float)
         p_array = p_array / np.sum(p_array)
         P = np.cumsum(p_array)
         P_list = P.tolist()
+        P_list.pop()
+        P_list.insert(0,0)
         
-        for k in range(0,num_of_kpt):
+        for i in range(0,num_of_kpt):
             rn = np.random.rand()
-            sel = [k for k in range(0, len(P_list)) if P_list[k] < rn]
+            sel = [k for k in range(0, len(r_range)) if P_list[k] < rn]
             r = r_range[max(sel)]
             
             w = width - 2*r
@@ -40,7 +42,7 @@ class Keypoint:
             Y = h*np.random.rand() + r
             sig = r / 6
             
-            self.kpt[:, k] = [X, Y, sig, orientation]            
+            self.kpt[:, i] = [X, Y, sig, orientation]            
          
         
     def save_keypoint(self, file_dir, file_name):
@@ -67,6 +69,8 @@ class Keypoint:
 if __name__ == '__main__':
     kp = Keypoint()
     
-    kp.generate_keypoint(1000, 640, 480, 6, 0)
+    kp.generate_keypoint(1000, 640, 480, 1)
+    
+    kp.save_keypoint('./Keypoint/', 'keypoint_1000')
     
     print kp.kpt
