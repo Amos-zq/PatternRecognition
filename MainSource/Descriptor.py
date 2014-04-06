@@ -15,7 +15,7 @@ class Descriptor:
         cannot use opencv functions, use vl functions to 
         do this for us
         '''
-        A, self.desc = vl.vl_sift(img_data, frames = kpts, orientations = True)
+        drop, self.desc = vl.vl_sift(img_data, frames = kpts, orientations = False)
         
     def save_desc(self, file_dir, file_name):
         if not os.path.isdir(file_dir):
@@ -29,8 +29,8 @@ class Descriptor:
         
     def load_desc(self, file_dir, file_name):
         try:
-            with open(os.path(file_dir, file_name), 'rb') as file_data:
-                np.load(file_data, self.desc)
+            with open(os.path.join(file_dir, file_name), 'rb') as file_data:
+                self.desc = np.load(file_data)
         
         except IOError as ioerr:
             print ioerr
@@ -42,13 +42,24 @@ if __name__ == '__main__':
     kpt = Keypoint()  
     kpt.load_keypoint('./Keypoint/', 'keypoint_1000')
     
-    #load image(load image, convert to np array with float type)
-    img = Image.open("./Image/stand-image_01.jpg")
-    img_data = np.asarray(img, dtype=float)
+    k = 0
+    num_of_train = 10
+    for folder_name in os.listdir('./Image'):
+        count = 0;
+        for file_name in os.listdir(os.path.join('./Image', folder_name)):
+            if count >= 10:
+                break
+            #load image(load image, convert to np array with float type)
+            img = Image.open(os.path.join('./Image', folder_name, file_name))
+            img_data = np.asarray(img, dtype=float)
     
-    #generate desc
-    desc = Descriptor()
-    desc.generate_desc(img_data, kpt.kpt)
-    
-    print desc.desc
+            #generate desc
+            desc = Descriptor()
+            desc.generate_desc(img_data, kpt.kpt)
+            desc.save_desc('./Descriptor/', 'desc_'+str(k))
+            
+            count += 1
+            k += 1
+            
+            print desc.desc
     
