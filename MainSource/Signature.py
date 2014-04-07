@@ -59,7 +59,15 @@ class Signature:
             
             print sign[0:30]
             self.sign_database[i,:] = sign
-                       
+
+    def generate_sign_database_dir(self, tr, desc_database, K, depth, total_img, num_kpts):
+        L = (K**(depth+1)-1) / (K-1) - 1
+        self.sign_database = np.empty(shape=(total_img, L))
+        
+        for i in range(0, total_img):           
+            sign = self.generate_sign(tr, desc_database[:,i*num_kpts:,(i+1)*num_kpts],  K, depth)
+            
+            self.sign_database[i,:] = sign                       
                 
     def save_sign(self, file_dir, file_name):
         if not os.path.isdir(file_dir):

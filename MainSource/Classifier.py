@@ -13,9 +13,6 @@ from Tree import Tree
 from Weight import Weight
 
 
-        
-
-
 def dist(data_sign, query_sign):
     diff = data_sign-query_sign
     diff = np.fabs(diff)
@@ -24,13 +21,13 @@ def dist(data_sign, query_sign):
 if __name__ == '__main__':
 
     #Load trained database
-    wt = Weight(180, 11110)
+    wt = Weight(0.1)
     wt.load_weights('./Signature/1000/', 'weights')
     wt.load_weighted_sign('./Signature/1000/', 'weighted_sign')
     
     #Load tree
     tr = vl._vlfeat.VlHIKMTree(0, 0)
-    tr.load('./tree.vlhkm')
+    tr.load('./Tree/tree.vlhkm')
     '''match test
     '''
     for i in range(0, 180):

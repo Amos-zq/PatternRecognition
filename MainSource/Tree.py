@@ -10,15 +10,14 @@ from Descriptor import Descriptor
 import os.path
 
 class Tree:      
-    def generate_tree(self, data, K, nleaves):
+    def generate_tree(self, data, K, nleaves, file_dir, file_name):
         
         self.K = K
         self.nleaves = nleaves
         [tr, A] = vl.vl_hikmeans(data, self.K, self.nleaves, verb=1)
-        
-        print A[:, 0:1000]
+
             
-        tr.save('./tree.vlhkm')
+        tr.save(os.path.join(file_dir, file_name))
         
         #save A in signature
         #try:
@@ -26,6 +25,7 @@ class Tree:
         #        np.save(file_data, A)
         #except IOError as ioerror:
         #    print ioerror
+        
         
 if __name__=="__main__":
     desc = Descriptor()
@@ -38,7 +38,7 @@ if __name__=="__main__":
         k += 1000
         
     tree = Tree()
-    tree.generate_tree(data, 10, 10000)
+    tree.generate_tree(data, 10, 10000, './', 'tree.vlhkm')
     
     #tr = vl._vlfeat.VlHIKMTree(0, 0)
     #tr.load('./tree.vlhkm')

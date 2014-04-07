@@ -7,11 +7,9 @@ import numpy as np
 from Signature import Signature
 import os.path
 
-class Weight:        
-    def __init__(self, total_img, L, cutoff = 0.01):
-        self.total_img = total_img
-        self.L = L
-        self.cutoff = cutoff
+class Weight:
+    def __init__(self, cutoff):
+        self.cutoff = cutoff        
         
     def get_weight(self, sign_database):
         m, n = sign_database.shape
@@ -31,9 +29,10 @@ class Weight:
         print 'Calculate weights'
              
     def weight_train_database(self, sign_database):
-        self.weighted_sign = np.empty(shape=(self.total_img, self.L))
+        m, n = sign_database.shape
+        self.weighted_sign = np.empty(shape=(m, n))
         
-        for i in range (0, self.total_img):           
+        for i in range (0, m):           
             self.weighted_sign[i,:] = self.weight_sign(sign_database[i, :])
                       
     def weight_sign(self, sign):       
@@ -109,7 +108,7 @@ if __name__ == '__main__':
     sign = Signature()
     sign.load_sign('./Signature/1000/', 'sign_1000')
     
-    wt = Weight(180, L)    
+    wt = Weight(0.01)    
     wt.get_weight(sign.sign_database)
     
     #print wt.weights  
