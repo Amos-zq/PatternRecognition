@@ -7,26 +7,18 @@ import numpy as np
 from Signature import Signature
 import os.path
 
-class Weight:
-    def __init__(self, cutoff, total_img, K, depth):
-        L = (K**(depth+1)-1) / (K-1) - 1
+class Weight:        
+    def __init__(self, total_img, L, cutoff = 0.01):
         self.total_img = total_img
-        self.weighted_sign = np.empty(shape=(total_img, L))
+        self.L = L
         self.cutoff = cutoff
         
-        # load signature
-        for i in range(0, total_img):
-            sign = Signature()
-            sign.load_sign('./Signature/1000/', 'sign_'+str(i))
-            self.weighted_sign[i, :] = sign.sign
-            #print 'load sign_'+str(i)
-        
-    def get_weight(self):
-        m, n = self.weighted_sign.shape
+    def get_weight(self, sign_database):
+        m, n = sign_database.shape
         usage = np.zeros(n)
         
         for k in range(0, m):
-            sel = [p for p in range(0, n) if not self.weighted_sign[k, p] == 0]
+            sel = [p for p in range(0, n) if not sign_database[k, p] == 0]
             usage[sel] += 1
             
         #print usage.tolist()
@@ -36,15 +28,14 @@ class Weight:
         self.weights[sel] = m/usage[sel]
         self.weights[sel] = np.log(self.weights[sel])
         
+        print 'Calculate weights'
+             
+    def weight_train_database(self, sign_database):
+        self.weighted_sign = np.empty(shape=(self.total_img, self.L))
         
-    def weight_train_database(self):
-        for i in range (0, self.total_img):
-            sign = self.weighted_sign[i,:]
-            
-            weighted_sign = self.weight_sign(sign)
-            
-            self.weighted_sign[i,:] = weighted_sign
-          
+        for i in range (0, self.total_img):           
+            self.weighted_sign[i,:] = self.weight_sign(sign_database[i, :])
+                      
     def weight_sign(self, sign):       
         #weight the signature
         L = sign.size
@@ -72,20 +63,9 @@ class Weight:
                 [p for p in range(0, L) if sign[p] == 0]
         sign[sel[0:rem]] += 1
         
-        return sign
-         
-        
-    def save_weighted_sign(self, file_dir, file_name):
-        if not os.path.isdir(file_dir):
-            os.mkdir(file_dir)
-            
-        try:
-            with open(os.path.join(file_dir, file_name), 'wb') as file_data:
-                np.save(file_data, self.weighted_sign)
-        except IOError as ioerror:
-            print ioerror
-    
-    
+        #print "Weighting the Sign"
+        return sign  
+   
     def save_weights(self, file_dir, file_name):
         if not os.path.isdir(file_dir):
             os.mkdir(file_dir)
@@ -95,7 +75,16 @@ class Weight:
                 np.save(file_data, self.weights)
         except IOError as ioerror:
             print ioerror
+       
+    def save_weighted_sign(self, file_dir, file_name):
+        if not os.path.isdir(file_dir):
+            os.mkdir(file_dir)
             
+        try:
+            with open(os.path.join(file_dir, file_name), 'wb') as file_data:
+                np.save(file_data, self.weighted_sign)
+        except IOError as ioerror:
+            print ioerror            
     
     def load_weights(self,file_dir, file_name):
         try:
@@ -113,13 +102,18 @@ class Weight:
         
         
 if __name__ == '__main__':
-    wt = Weight(0.001, 180, 10, 4)
-     
-    wt.get_weight()
+         
+    # load signature
+    L = (10**(4+1)-1) / (10-1) - 1
+    sign_database = np.empty(shape=(180, L))
+    sign = Signature()
+    sign.load_sign('./Signature/1000/', 'sign_1000')
     
-    #print wt.weights
+    wt = Weight(180, L)    
+    wt.get_weight(sign.sign_database)
     
-    wt.weight_train_database()
+    #print wt.weights  
+    wt.weight_train_database(sign.sign_database)
     
     wt.save_weights('./Signature/1000/', 'weights')
     wt.save_weighted_sign('./Signature/1000/', 'weighted_sign')

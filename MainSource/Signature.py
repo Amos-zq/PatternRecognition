@@ -1,6 +1,12 @@
 '''
 Created on Apr 5, 2014
 
+Signature class takes in paramaters:
+    tree
+    desc
+    K
+    depth
+
 @author: yulu
 '''
 
@@ -10,11 +16,14 @@ from Descriptor import Descriptor
 import vlfeat as vl
 
 class Signature:
-    def generate_sign(self, A, K, depth):
-        m, n = A.shape
+    def generate_sign(self, tr, desc, K, depth):
         L = (K**(depth+1)-1) / (K-1) - 1
         
-        self.sign = np.zeros(L)
+        A = vl.vl_hikmeanspush(tr, desc)
+        
+        m, n = A.shape
+       
+        sign = np.zeros(L)
         
         '''
         branch_offset                      | level_offset
@@ -33,7 +42,24 @@ class Signature:
                 level_offset = K * level_offset + 1
                 branch_offset = K * branch_offset + s
                 
-                self.sign[level_offset + branch_offset - 1] += 1
+                sign[level_offset + branch_offset - 1] += 1
+                
+        return sign
+                
+    def generate_sign_database(self, tr, decs_file_dir, K, depth, total_img):
+        L = (K**(depth+1)-1) / (K-1) - 1
+        self.sign_database = np.empty(shape=(total_img, L))
+        
+        for i in range(0, total_img):
+            #load keypoint
+            desc = Descriptor()
+            desc.load_desc(decs_file_dir, 'desc_'+str(i))
+            
+            sign = self.generate_sign(tr, desc.desc,  K, depth)
+            
+            print sign[0:30]
+            self.sign_database[i,:] = sign
+                       
                 
     def save_sign(self, file_dir, file_name):
         if not os.path.isdir(file_dir):
@@ -41,40 +67,27 @@ class Signature:
             
         try:
             with open(os.path.join(file_dir, file_name), 'wb') as file_data:
-                np.save(file_data, self.sign)
+                np.save(file_data, self.sign_database)
         except IOError as ioerror:
             print ioerror
     
     def load_sign(self, file_dir, file_name):
         try:
             with open(os.path.join(file_dir, file_name), 'rb') as file_data:
-                self.sign = np.load(file_data)
+                self.sign_database = np.load(file_data)
         except IOError as ioerror:
             print ioerror        
                 
 if __name__=="__main__":
 
+    #load tree
+    tr = vl._vlfeat.VlHIKMTree(0, 0)
+    tr.load('./tree.vlhkm') 
     
-     
-    for i in range(0, 180):
-        #load keypoint
-        desc = Descriptor()
-        desc.load_desc('./Descriptor/', 'desc_'+str(i))
+    sign = Signature()
+    sign.generate_sign_database(tr, './Descriptor/', 10, 4, 180)
     
-        #push down to the tree
-        #Load tree
-        tr = vl._vlfeat.VlHIKMTree(0, 0)
-        tr.load('./tree.vlhkm')
-        
-        At = vl.vl_hikmeanspush(tr, desc.desc)
-        
-        sign = Signature() 
-        k = i*1000  
-        sign.generate_sign(At, 10, 4)
-    
-        sign.save_sign('./Signature/1000/', 'sign_'+str(i))
-        print 'generate sign for desc ' + str(i)
-        print sign.sign       
+    sign.save_sign('./Signature/1000/', 'sign_1000')
                 
                 
         

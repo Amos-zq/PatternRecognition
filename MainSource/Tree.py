@@ -9,12 +9,11 @@ import numpy as np
 from Descriptor import Descriptor
 import os.path
 
-class Tree:
-    def __init__(self, K, nleaves):
+class Tree:      
+    def generate_tree(self, data, K, nleaves):
+        
         self.K = K
         self.nleaves = nleaves
-        
-    def generate_tree(self, data):
         [tr, A] = vl.vl_hikmeans(data, self.K, self.nleaves, verb=1)
         
         print A[:, 0:1000]
@@ -22,11 +21,11 @@ class Tree:
         tr.save('./tree.vlhkm')
         
         #save A in signature
-        try:
-            with open(os.path.join('./Signature/', 'sign_1000'), 'wb') as file_data:
-                np.save(file_data, A)
-        except IOError as ioerror:
-            print ioerror
+        #try:
+        #    with open(os.path.join('./Signature/', 'sign_1000'), 'wb') as file_data:
+        #        np.save(file_data, A)
+        #except IOError as ioerror:
+        #    print ioerror
         
 if __name__=="__main__":
     desc = Descriptor()
@@ -38,15 +37,15 @@ if __name__=="__main__":
         print 'desc_'+str(i)
         k += 1000
         
-    tree = Tree(10, 10000)
-    tree.generate_tree(data)
+    tree = Tree()
+    tree.generate_tree(data, 10, 10000)
     
-    tr = vl._vlfeat.VlHIKMTree(0, 0)
-    tr.load('./tree.vlhkm')
+    #tr = vl._vlfeat.VlHIKMTree(0, 0)
+    #tr.load('./tree.vlhkm')
 
-    At = vl.vl_hikmeanspush(tr, data[:, 0:1000])
+    #At = vl.vl_hikmeanspush(tr, data[:, 0:1000])
     
-    print At[:, 0:1000]
+    #print At[:, 0:1000]
     
     print data[:, 0:1000]
     

@@ -6,11 +6,13 @@ Created on Apr 6, 2014
 import numpy as np
 import vlfeat as vl
 
-from RandomKeypoint import Keypoint
+from Keypoint import Keypoint
 from Descriptor import Descriptor
 from Signature import Signature
 from Tree import Tree
 from Weight import Weight
+
+
 
 def dist(data_sign, query_sign):
     diff = data_sign-query_sign
@@ -20,7 +22,7 @@ def dist(data_sign, query_sign):
 if __name__ == '__main__':
 
     #Load trained database
-    wt = Weight(0.001, 180, 10, 4)
+    wt = Weight(180, 11110)
     wt.load_weights('./Signature/1000/', 'weights')
     wt.load_weighted_sign('./Signature/1000/', 'weighted_sign')
     
@@ -36,17 +38,13 @@ if __name__ == '__main__':
         #load keypoint
         desc = Descriptor()
         desc.load_desc('./Descriptor/', desc_file_name)
-    
-        #push down to the tree
-       
-        At = vl.vl_hikmeanspush(tr, desc.desc)
 
         #generate sign
         sign = Signature()
-        sign.generate_sign(At, 10, 4)
+        s = sign.generate_sign(tr, desc.desc, 10, 4)
     
         #weight   
-        weighted_sign = wt.weight_sign(sign.sign)
+        weighted_sign = wt.weight_sign(s)
     
         #print weighted_sign[100:300]
         #print wt.weighted_sign[i, 100:300]   

@@ -1,12 +1,16 @@
 '''
 Created on Apr 5, 2014
 
+Descriptor class takes in paramaters:
+    img_data
+    kpts
+
 @author: yulu
 '''
 import vlfeat as vl
 import numpy as np
 import os.path
-from RandomKeypoint import Keypoint
+from Keypoint import Keypoint
 from PIL import Image
 
 class Descriptor:       
@@ -15,7 +19,7 @@ class Descriptor:
         cannot use opencv functions, use vl functions to 
         do this for us
         '''
-        drop, self.desc = vl.vl_sift(img_data, frames = kpts, orientations = False)
+        drop, self.desc = vl.vl_sift(img_data, frames = kpts, orientations = True)
         
     def save_desc(self, file_dir, file_name):
         if not os.path.isdir(file_dir):
