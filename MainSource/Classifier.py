@@ -13,6 +13,8 @@ from Tree import Tree
 from Weight import Weight
 
 
+        
+
 
 def dist(data_sign, query_sign):
     diff = data_sign-query_sign
