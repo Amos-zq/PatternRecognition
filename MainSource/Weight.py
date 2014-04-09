@@ -34,6 +34,7 @@ class Weight:
         
         for i in range (0, m):           
             self.weighted_sign[i,:] = self.weight_sign(sign_database[i, :])
+            print '=>'+str(i),
                       
     def weight_sign(self, sign):       
         #weight the signature

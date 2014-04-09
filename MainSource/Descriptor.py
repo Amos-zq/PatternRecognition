@@ -19,7 +19,7 @@ class Descriptor:
         cannot use opencv functions, use vl functions to 
         do this for us
         '''
-        drop, self.desc = vl.vl_sift(img_data, frames = kpts, orientations = True)
+        drop, self.desc = vl.vl_sift(img_data, kpts, orientations = False) #why cannot change to true for orientation????
         
     def save_desc(self, file_dir, file_name):
         if not os.path.isdir(file_dir):
@@ -35,7 +35,7 @@ class Descriptor:
         try:
             with open(os.path.join(file_dir, file_name), 'rb') as file_data:
                 self.desc = np.load(file_data)
-                self.desc = self.desc.astype(float)
+                #self.desc = self.desc.astype(float)
         
         except IOError as ioerr:
             print ioerr

@@ -8,6 +8,7 @@ import numpy as np
 import vlfeat as vl
 import os.path
 from PIL import Image
+import pickle
 
 from Keypoint import Keypoint
 from Descriptor import Descriptor
@@ -15,147 +16,265 @@ from Signature import Signature
 from Tree import Tree
 from Weight import Weight
 
+
 class PatternRecognition:
+    
+    DATABASE_DIR='./Database/'
     
     KEYPOINT_DIR = './Keypoint/'
     KEYPOINT_FILE = 'kpt_'
+    
     DESC_DIR = './Descriptor/'
     DESC_FILE = 'desc_'
-    SIGN_DIR = './Signature/'
-    SIGN_FILE = 'sign_'
+    
     TREE_DIR = './Tree'
     TREE_FILE = '_tree.vlhkm'
+    
+    SIGN_DIR = './Signature/'
+    SIGN_FILE = 'sign_'
+
     WEIGHT_FILE = 'weights_'
     WEIGHT_SIGN_FILE = './weighted_sign_'
+    
+    WIDTH = 640
+    HEIGHT = 480
+    SIGMA = 1
+
     
     def dist(self, data_sign, query_sign):
         diff = data_sign-query_sign
         diff = np.fabs(diff)
         return np.sum(diff)
     
-    def Build_Database(self, img_dir, num_of_sets, num_in_set):
-        self.total = num_of_sets * num_in_set
-        self.cla = num_of_sets
-        self.size = num_in_set
+    '''
+    specify the class index and path to the image giving a img directory
+    a version num is given, the trained database should access this table by giving the version and number
+    and also contains this num in its
+    '''
+    
+    def Build_Database(self, 
+                       img_dir, 
+                       num_in_set, #number of image in each set
+                       num_of_sets, #total number of sets
+                       version #version num to store the database
+                       ):
         
-        self.database = []
-        set_index = 0
-        for folder_name in os.listdir(img_dir):
-            if set_index >= num_of_sets:
-                break;
-            index = 0;
-            for file_name in os.listdir(os.path.join(img_dir, folder_name)): #later randomize this
-                if index >= num_in_set:
-                    break
+        if not os.path.isfile(os.path.join(PR.DATABASE_DIR, 'database_'+str(version))):
+            print 'generate database'
+            database = []
+            set_index = 0
+            for folder_name in os.listdir(img_dir):
+                if set_index >= num_of_sets:
+                    break;
+                index = 0;
+                for file_name in os.listdir(os.path.join(img_dir, folder_name)): #later randomize this
+                    if index >= num_in_set:
+                        break
+                    
+                    data_set = [index, set_index, os.path.join(img_dir, folder_name,file_name)]
+                    
+                    index += 1
+                    
+                    database.append(data_set) 
+                    
+                    
+                set_index += 1
                 
-                data_set = (index, set_index, os.path.join(img_dir, folder_name,file_name))
+            #save database
+            db_to_save = [img_dir, num_in_set, num_of_sets, database]
+            if not os.path.isdir(self.DATABASE_DIR):
+                os.mkdir(self.DATABASE_DIR)
                 
-                index += 1
-                
-                self.database.append(data_set) 
-                
-            set_index += 1
+            try:
+                with open(os.path.join(self.DATABASE_DIR, 'database_'+str(version)), 'wb') as wfile:
+                    pickle.dump(db_to_save, wfile)
+            except IOError as ioerr:
+                print ioerr  
+                     
+        else:
+            print 'database version exist, cannot overwrite for data protection, try another version number'
+        
+        
+            
     
     '''
-    Build a signature database from a sets of images
+    Build a signature database from a batabase table
     '''
-    def Train_Database(self, 
-                 img_dir, #directory to the images
-                 img_width, img_height, #size of image
-                 num_in_set, #number of image in each set
-                 total_set, #total number of sets
-                 num_kpts, #number of kpt                            
-                 K,#tree branch
-                 depth, #depth
-                 nleaves #leaves in the tree
-                ):
-        
-        self.total = num_in_set * total_set
-        self.total_set = total_set
-        self.num = num_in_set
-        self.num_kpts = num_kpts
-        self.K = K
-        self.depth = depth
+    def Train_Database_Sign(self, 
+                 database,
+                 version,
+                 num_of_kpts,
+                 force_update = False,                          
+                 K = 10,#tree branch
+                 depth = 4, #depth
+                 nleaves = 10000 #leaves in the tree
+                 ):
+                    
+        #load information from database
+        num_in_set = database[1]
+        num_of_sets = database[2]
+        data_dir = database[3]   
+        total = num_in_set * num_of_sets
+
+        updated = force_update # will be turned true if one of the steps has been processed, so that the following step will be focused to processs!
         
         '''
-        generate keypoint ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        generate keypoint ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+        if file exists, load the kpt, otherwise generate it and save
         '''
         kp = Keypoint()   
-        kp.generate_keypoint(num_kpts, img_width, img_height, 1)   #sigma is set to 1 currently
-        kp.save_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_kpts)) #save to a directory
-        
-        print 'Random keypoint generated'
+        kp_file_name = os.path.join(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts))
+        if not force_update and os.path.isfile(kp_file_name):
+            kp.load_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts))
+
+            print 'Random keypoint loaded'
+        else:
+            kp.generate_keypoint(num_of_kpts, self.WIDTH, self.HEIGHT, self.SIGMA)   #sigma is set to 1 currently
+            kp.save_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts)) #save to a directory
+            updated = True
+            print 'Random keypoint generated'
         
         
         '''
-        generate desc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        generate desc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ dir should be saved
         '''
-        desc_database = np.empty(shape=(128, self.total*self.num_kpts))
-        k = 0
-        for folder_name in os.listdir(img_dir):
-            count = 0;
-            for file_name in os.listdir(os.path.join(img_dir, folder_name)):
-                if count >= num_in_set:
-                    break
+        
+        desc_dir = os.path.join(self.DESC_DIR, 'db_version_'+str(version), str(num_of_kpts))
+        if updated or (not os.path.isdir(desc_dir) or os.listdir(desc_dir) == []):
+            updated = True
+            
+            if not os.path.isdir(os.path.join(self.DESC_DIR, 'db_version_'+str(version))):
+                os.mkdir(os.path.join(self.DESC_DIR, 'db_version_'+str(version)))
+            if not os.path.isdir(desc_dir):
+                os.mkdir(desc_dir)
+            
+            for d in data_dir:  
+                img_idx = d[0]         
+                class_idx = d[1]
+                img_dir = d[2]
+                
+                '''
+                k is the index of desc included in the name, should be ordered by the class 
+                '''
+                k = img_idx + class_idx * num_in_set
+                
                 #load image(load image, convert to np array with float type)
-                img = Image.open(os.path.join(img_dir, folder_name, file_name))
+                img = Image.open(img_dir)
                 img_data = np.asarray(img, dtype=float)
-    
+        
                 #generate desc
                 desc = Descriptor()
                 desc.generate_desc(img_data, kp.kpt)
-                desc.save_desc(os.path.join(self.DESC_DIR, str(self.num_kpts)), self.DESC_FILE + str(k))
+                desc.save_desc(desc_dir, self.DESC_FILE + str(k))
+    
+                print desc.desc
                 
-                count += 1
-                k += 1
-                desc_database[:, k*num_kpts:k+num_kpts] = desc.desc #add to the database therefore later can be used to train the tree
+                #load to a large matrix
+                #desc_database[:, k*num_of_kpts:k+num_of_kpts] = desc.desc #add to the database therefore later can be used to train the tree
                 print '=>'+str(k) ,
-        print 'Descriptor Generated'
+                
+            print 'Descriptor Generated'
+            
+                        
+        #load desc 
+        desc_database = np.empty(shape=(128, total*num_of_kpts))
+        for k in range(0, total):
+            desc = Descriptor()
+            desc.load_desc(desc_dir, self.DESC_FILE + str(k))
+            desc_database[:, k*num_of_kpts:(k+1)*num_of_kpts] = desc.desc
+            
+        print 'Descriptor Loaded'
         
         '''
         Build the tree~~~~~~~~~~~~~~~~~~~~~~~~~
         '''
-       
-        tree = Tree()
-        tree.generate_tree(desc_database, self.K, self.nleaves, self.TREE_DIR, str(num_kpts)+self.TREE_FILE)
+        tree_dir = os.path.join(self.TREE_DIR, 'db_version_' + str(version))
+        if updated or (not os.path.isfile(os.path.join(tree_dir, str(num_of_kpts) + self.TREE_FILE))): 
+            updated = True
+            if not os.path.isdir(tree_dir):
+                os.mkdir(tree_dir)
+                      
+            tree = Tree()
+            tree.generate_tree(desc_database, K, nleaves, tree_dir, str(num_of_kpts) + self.TREE_FILE)
         
-        print 'Tree built'
-        
+            print 'Tree built'
+   
+
         '''
         Generate signature~~~~~~~~~~~~~~~~~~~~~~~~~
-        '''
-        tr = vl._vlfeat.VlHIKMTree(0, 0)
-        tr.load(self.TREE_DIR + str(num_kpts)+self.TREE_FILE)
-    
-        sign = Signature()
-        sign.generate_sign_database_dir(tr, desc_database, self.K, self.depth, self.total, self.num_kpts)
-    
-        sign.save_sign(self.SIGN_DIR, self.SIGN_FILE+str(self.num_kpts))
+        '''      
+            
+        sign_dir = os.path.join(self.SIGN_DIR, 'db_version_' + str(version))
         
-        print 'Signature Generated'
+        if updated or (not os.path.isfile(os.path.join(sign_dir, self.SIGN_FILE+str(num_of_kpts)))):
+            updated = True
+            
+            tr = vl._vlfeat.VlHIKMTree(0, 0)
+            tr.load(os.path.join(tree_dir, str(num_of_kpts) + self.TREE_FILE))
+            
+            print 'Tree Loaded'
+            
+            sign = Signature()
+            sign.generate_sign_database_dir(tr, desc_database, K, depth, total, num_of_kpts)
+    
+            if not os.path.isdir(sign_dir):
+                os.mkdir(sign_dir)
+                
+            sign.save_sign(sign_dir, self.SIGN_FILE+str(num_of_kpts))
+            
+            print 'Signature Generated'
+        
+        else:
+            print 'Signature Already Generated'
         
         del desc_database
+        
+        return updated;
+        
         
     '''
     calculate the weights and weight the signature in database
     '''
-    def Weight_Database(self,
-                        num_kpts,
-                        total_img,
-                        K,
-                        depth,
-                        cutoff):
-        #load signature
-        sign = Signature()
-        sign.load_sign(self.SIGN_DIR, self.SIGN_FILE+str(num_kpts))
+    def Build_Weight_Database(  self,
+                                database,
+                                version,
+                                num_of_kpts,
+                                cutoff,
+                                force_update = False,
+                                K = 10,
+                                depth = 4,
+                                nleaves = 10000):
+                
+        #load information from database
+        num_in_set = database[0]
+        num_of_sets = database[1]       
+        total = num_in_set * num_of_sets
         
-        L = (K**(depth+1)-1) / (K-1) - 1
-        wt = Weight(total_img, L, cutoff)
-        wt.get_weight(sign.sign_database)        
-        wt.weight_train_database(sign.sign_database)
-    
-        wt.save_weights(self.SIGN_DIR, self.WEIGHT_FILE+str(num_kpts))
-        wt.save_weighted_sign(self.SIGN_DIR, self.WEIGHT_SIGN_FILE+str(num_kpts))
+        updated = self.Train_Database_Sign(database,version, num_of_kpts, force_update, K, depth, nleaves)
+        
+        #load signature
+        sign_dir = os.path.join(self.SIGN_DIR, 'db_version_' + str(version))
+        sign = Signature()
+        sign.load_sign(sign_dir, self.SIGN_FILE+str(num_of_kpts))
+        
+        print 'Siganture Loaded'
+        
+        wt_file = os.path.join(sign_dir, self.WEIGHT_FILE+str(num_of_kpts)+'_'+str(cutoff))
+        wts_file = os.path.join(sign_dir, self.WEIGHT_SIGN_FILE+str(num_of_kpts)+'_'+str(cutoff))
+        
+        if updated or (not os.path.isfile(wt_file) and not os.path.isfile(wts_file)):
+            wt = Weight(cutoff)
+            wt.get_weight(sign.sign_database)        
+            wt.weight_train_database(sign.sign_database)
+        
+            wt.save_weights(sign_dir, self.WEIGHT_FILE+str(num_of_kpts)+'_'+str(cutoff))
+            wt.save_weighted_sign(sign_dir, self.WEIGHT_SIGN_FILE+str(num_of_kpts)+'_'+str(cutoff))
+            
+            print ' '
+            print 'Wegihted Sign Generated'
+        
+        else:
+            print 'Weighted Sign Has Already Been Generated'
         
     def Classifier(self, num_kpts, img_dir, total_test_img, num_in_set, K, depth, cutoff, top=5):
         classify_result =[]
@@ -198,8 +317,28 @@ class PatternRecognition:
             classify_result[k] = best
             
 if __name__ =='__main__':
-    PR = PatternRecognition()
-    PR.Build_Database('./Image/', 15, 8)
+    num_of_sets = 15
+    num_of_image = 10
+    image_folder = './Image/'
+    version = 2
     
-    print PR.database
+    PR = PatternRecognition()
+    
+    #generate the training database
+    PR.Build_Database(image_folder, num_of_image, num_of_sets, version)
+    
+    #load the training database   
+    try:
+        with open(os.path.join(PR.DATABASE_DIR, 'database_'+ str(version)), 'rb') as rfile:
+            database = pickle.load(rfile)
+
+    except IOError as ioerr:
+        print ioerr
+    
+
+    num_of_kpts = 1000
+    cutoff = 0.01
+    #if buid with another database version, indicate a force update!!
+    PR.Build_Weight_Database(database,version,num_of_kpts, cutoff)
+    
         

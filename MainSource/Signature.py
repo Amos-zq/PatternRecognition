@@ -64,8 +64,9 @@ class Signature:
         L = (K**(depth+1)-1) / (K-1) - 1
         self.sign_database = np.empty(shape=(total_img, L))
         
-        for i in range(0, total_img):           
-            sign = self.generate_sign(tr, desc_database[:,i*num_kpts:,(i+1)*num_kpts],  K, depth)
+        for i in range(0, total_img):    
+            print i       
+            sign = self.generate_sign(tr, desc_database[:,i*num_kpts:(i+1)*num_kpts],  K, depth)
             
             self.sign_database[i,:] = sign                       
                 
