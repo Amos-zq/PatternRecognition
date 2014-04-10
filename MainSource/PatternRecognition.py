@@ -7,7 +7,7 @@ Created on Apr 7, 2014
 import numpy as np
 import vlfeat as vl
 import os.path
-from PIL import Image
+from PIL import Image, ImageOps
 import pickle
 
 from Keypoint import Keypoint
@@ -38,8 +38,6 @@ class PatternRecognition:
     WEIGHT_FILE = 'weights_'
     WEIGHT_SIGN_FILE = './weighted_sign_'
     
-    WIDTH = 640
-    HEIGHT = 480
     SIGMA = 1
 
     
@@ -53,13 +51,20 @@ class PatternRecognition:
             sel = len(input_list)
             
         r_list = []
-        r_set = set()
         while len(r_list) < sel:
             rand_n = random.randint(0, len(input_list)-1)
-            if rand_n not in r_set:
-                r_set.add(rand_n)
+            if rand_n not in r_list:
                 r_list.append(rand_n)
         return r_list
+    
+    def StandalizeImage(self, img, h):
+        [width, height] = img.size
+        ratio = float(height)/h
+        w = int(width/ratio)
+        img = ImageOps.fit(img, [w, h] , Image.ANTIALIAS)
+        
+        return img
+    
     
     '''
     specify the class index and path to the image giving a img directory
@@ -144,21 +149,7 @@ class PatternRecognition:
 
         updated = force_update # will be turned true if one of the steps has been processed, so that the following step will be focused to processs!
         
-        '''
-        generate keypoint ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-        if file exists, load the kpt, otherwise generate it and save
-        '''
-        kp = Keypoint()   
-        kp_file_name = os.path.join(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts))
-        if not force_update and os.path.isfile(kp_file_name):
-            kp.load_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts))
 
-            print 'Random keypoint loaded'
-        else:
-            kp.generate_keypoint(num_of_kpts, self.WIDTH, self.HEIGHT, self.SIGMA)   #sigma is set to 1 currently
-            kp.save_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts)) #save to a directory
-            updated = True
-            print 'Random keypoint generated'
         
         
         '''
@@ -185,8 +176,16 @@ class PatternRecognition:
                 k = img_idx + class_idx * num_in_set
                 
                 #load image(load image, convert to np array with float type)
-                img = Image.open(img_dir)
-                img_data = np.asarray(img, dtype=float)
+                img = Image.open(img_dir).convert('L')
+                img_s = self.StandalizeImage(img, 480)
+                
+                img_data = np.asarray(img_s, dtype=float)
+        
+                kp = Keypoint()   
+                kp.generate_keypoint(num_of_kpts, img.size[0], img.size[1], self.SIGMA)   #sigma is set to 1 currently
+                #kp.save_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts)) #save to a directory
+
+                print 'Random keypoint generated'
         
                 #generate desc
                 desc = Descriptor()
@@ -203,7 +202,7 @@ class PatternRecognition:
             
                         
         #load desc 
-        desc_database = np.empty(shape=(128, total*num_of_kpts))
+        desc_database = np.empty(shape=(128, total*num_of_kpts), dtype=np.uint8)
         for k in range(0, total):
             desc = Descriptor()
             desc.load_desc(desc_dir, self.DESC_FILE + str(k))
@@ -333,19 +332,21 @@ class PatternRecognition:
 
         for k in test_database:
             #randomly get image from the img_dir
-            img = Image.open(k[2])
+            img = Image.open(k[2]).convert('L')
+            img = self.StandalizeImage(img, 480)
             img_data = np.asarray(img, dtype=float)
             
             #generate desc, sign and weighted sign
             kp = Keypoint()
-            kp.load_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts))
+            #kp.load_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts))
+            kp.generate_keypoint(num_of_kpts, img.size[0], img.size[1], self.SIGMA)
             desc = Descriptor()
             desc.generate_desc(img_data, kp.kpt)
             #very important !! convert desc to float type
-            desc_f = np.array(desc.desc, dtype=float)
+            #desc_f = np.array(desc.desc, dtype=float)
             
             sign = Signature()
-            s = sign.generate_sign(tr,desc_f, K, depth)
+            s = sign.generate_sign(tr,desc.desc, K, depth)
             weighted_sign = wt.weight_sign(s)
             
             #vote
@@ -369,9 +370,7 @@ class PatternRecognition:
         
         classify_score = classify_score / num_in_test_set
         
-        classify_result = zip(class_name, classify_score.tolist())
-        
-        print classify_result
+        print zip(class_name, classify_score.tolist())
         
             
 if __name__ =='__main__':
@@ -398,9 +397,9 @@ if __name__ =='__main__':
     num_of_kpts = 2000
     cutoff = 0.01
     #if buid with another database version, indicate a force update!!
-    #PR.Build_Weight_Database(database,version,num_of_kpts, cutoff)
+    PR.Build_Weight_Database(database,version,num_of_kpts, cutoff, True)
     
-    #PR.Classifier(database, version, num_of_kpts, cutoff, 3)
+    PR.Classifier(database, version, num_of_kpts, cutoff, 5)
     
     
     

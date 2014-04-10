@@ -35,7 +35,7 @@ class Descriptor:
         try:
             with open(os.path.join(file_dir, file_name), 'rb') as file_data:
                 self.desc = np.load(file_data)
-                self.desc = self.desc.astype(float)
+                #self.desc = self.desc.astype(float)
         
         except IOError as ioerr:
             print ioerr
