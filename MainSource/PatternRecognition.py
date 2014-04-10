@@ -99,7 +99,7 @@ class PatternRecognition:
                 
                 for j in range(0, num_in_test_set):
                     file_name = file_list[sel_test[j]]
-                    test_data_set = [j, set_index, os.path.join(img_dir, folder_name, file_name)]
+                    test_data_set = [j, set_index, os.path.join(img_dir, folder_name, file_name), folder_name]
                     
                     test_database.append(test_data_set)
                     
@@ -318,7 +318,8 @@ class PatternRecognition:
         total = num_in_set * num_of_sets
         num_in_test_set = len(test_database) / num_of_sets 
         
-        classify_result =np.zeros(num_of_sets)
+        classify_score =np.zeros(num_of_sets)
+        class_name = [[] for i in range(num_of_sets)]
         #load tree and weight
         wt = Weight(cutoff)
         sign_dir = os.path.join(self.SIGN_DIR, 'db_version_' + str(version))
@@ -360,21 +361,25 @@ class PatternRecognition:
             best = np.argmax(votes)
             
             if best == k[1]:
-                classify_result[k[1]] += 1
+                classify_score[k[1]] += 1
                 
             print '=>'+str(k[0])
+            
+            class_name[k[1]] = k[3]
         
-        classify_result = classify_result / num_in_test_set
+        classify_score = classify_score / num_in_test_set
+        
+        classify_result = zip(class_name, classify_score.tolist())
         
         print classify_result
         
             
 if __name__ =='__main__':
-    num_of_sets = 15
-    num_of_image_in_test = 8
-    num_of_image = 10
-    image_folder = './Image/'
-    version = 3
+    num_of_sets = 50
+    num_of_image_in_test = 20
+    num_of_image = 30
+    image_folder = './Image_large/'
+    version = 10
     
     PR = PatternRecognition()
     
@@ -388,13 +393,14 @@ if __name__ =='__main__':
     except IOError as ioerr:
         print ioerr
 
+    print database[2]
 
     num_of_kpts = 2000
     cutoff = 0.01
     #if buid with another database version, indicate a force update!!
     #PR.Build_Weight_Database(database,version,num_of_kpts, cutoff)
     
-    #PR.Classifier(database, version, num_of_kpts, cutoff, 1)
+    #PR.Classifier(database, version, num_of_kpts, cutoff, 3)
     
     
     
