@@ -370,15 +370,17 @@ class PatternRecognition:
         
         classify_score = classify_score / num_in_test_set
         
-        print zip(class_name, classify_score.tolist())
+        return zip(class_name, classify_score.tolist())
+        
+
         
             
 if __name__ =='__main__':
-    num_of_sets = 50
+    num_of_sets = 25
     num_of_image_in_test = 20
     num_of_image = 30
-    image_folder = './Image_large/'
-    version = 10
+    image_folder = './Image_easy/'
+    version = 11
     
     PR = PatternRecognition()
     
@@ -397,10 +399,16 @@ if __name__ =='__main__':
     num_of_kpts = 2000
     cutoff = 0.01
     #if buid with another database version, indicate a force update!!
-    PR.Build_Weight_Database(database,version,num_of_kpts, cutoff, True)
-    
-    PR.Classifier(database, version, num_of_kpts, cutoff, 5)
+    PR.Build_Weight_Database(database,version,num_of_kpts, cutoff)
     
     
+    result = PR.Classifier(database, version, num_of_kpts, cutoff, 5)
+    
+    try:
+        with open(os.path.join('./Result/', 'result_3.txt'), 'w') as rfile:
+            pickle.dump(result, rfile)
+    except IOError as ioerr:
+        print ioerr
+            
     
         
