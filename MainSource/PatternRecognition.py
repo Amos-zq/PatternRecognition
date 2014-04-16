@@ -97,14 +97,14 @@ class PatternRecognition:
                 
                 for i in range(0, num_in_set):                  
                     file_name = file_list[sel[i]]                  
-                    data_set = [i, set_index, os.path.join(img_dir, folder_name, file_name)]
+                    data_set = [i, set_index, os.path.join(img_dir, folder_name, file_name)] #data format = [index_in_set, set_index, actual dir to the image]
                     
                     database.append(data_set) 
                     
                 
                 for j in range(0, num_in_test_set):
                     file_name = file_list[sel_test[j]]
-                    test_data_set = [j, set_index, os.path.join(img_dir, folder_name, file_name), folder_name]
+                    test_data_set = [j, set_index, os.path.join(img_dir, folder_name, file_name), folder_name] #data format=[index_in_set, set_index actual dir to the image, class_name]
                     
                     test_database.append(test_data_set)
                     
@@ -319,7 +319,7 @@ class PatternRecognition:
         
         classify_score =np.zeros(num_of_sets)
         class_name = [[] for i in range(num_of_sets)]
-        #load tree and weight
+        #load weight
         wt = Weight(cutoff)
         sign_dir = os.path.join(self.SIGN_DIR, 'db_version_' + str(version))
         wt.load_weights(sign_dir, self.WEIGHT_FILE+str(num_of_kpts)+'_'+str(cutoff))
