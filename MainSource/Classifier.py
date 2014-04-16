@@ -6,30 +6,30 @@ Created on Apr 6, 2014
 import numpy as np
 import vlfeat as vl
 
-from Keypoint import Keypoint
-from Descriptor import Descriptor
-from Signature import Signature
-from Weight import Weight
+from MainSource.Keypoint import Keypoint
+from MainSource.Descriptor import Descriptor
+from MainSource.Signature import Signature
+from MainSource.Weight import Weight
 import os.path
 import pickle
 from PIL import Image, ImageOps
 
-DATABASE_DIR='./Database/'
+DATABASE_DIR='/home/yulu/Research/Web/aptana_workspace/PatternRecognition/MainSource/Database/'
 
-KEYPOINT_DIR = './Keypoint/'
+KEYPOINT_DIR = '/home/yulu/Research/Web/aptana_workspace/PatternRecognition/MainSource/Keypoint/'
 KEYPOINT_FILE = 'kpt_'
 
 DESC_DIR = './Descriptor/'
 DESC_FILE = 'desc_'
 
-TREE_DIR = './Tree'
+TREE_DIR = '/home/yulu/Research/Web/aptana_workspace/PatternRecognition/MainSource/Tree'
 TREE_FILE = '_tree.vlhkm'
 
-SIGN_DIR = './Signature/'
+SIGN_DIR = '/home/yulu/Research/Web/aptana_workspace/PatternRecognition/MainSource/Signature/'
 SIGN_FILE = 'sign_'
 
 WEIGHT_FILE = 'weights_'
-WEIGHT_SIGN_FILE = './weighted_sign_'
+WEIGHT_SIGN_FILE = 'weighted_sign_'
 
 SIGMA = 1
 
@@ -47,6 +47,8 @@ def StandalizeImage(img, h):
     return img
 
 def Classifier(image_path, database_version):
+    print os.path.abspath(DATABASE_DIR)
+    
     #load database info   
     try:
         with open(os.path.join(DATABASE_DIR, 'database_'+ str(database_version)), 'rb') as rfile:
