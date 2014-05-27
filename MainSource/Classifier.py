@@ -62,7 +62,7 @@ def Classifier(image_path, database_version):
     total = num_in_set * num_of_sets
     cutoff = 0.01
     num_of_kpts = 2000
-    top = 3
+    top = 1
     
     #Load weight
     wt = Weight(cutoff)
