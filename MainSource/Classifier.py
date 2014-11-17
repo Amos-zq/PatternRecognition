@@ -13,6 +13,9 @@ from MainSource.Weight import Weight
 import os.path
 import pickle
 from PIL import Image, ImageOps
+import time
+
+
 
 DATABASE_DIR='/home/yulu/Research/Web/aptana_workspace/PatternRecognition/MainSource/Database/'
 
@@ -61,7 +64,7 @@ def Classifier(image_path, database_version):
     data = database[2]
     total = num_in_set * num_of_sets
     cutoff = 0.01
-    num_of_kpts = 2000
+    num_of_kpts = 1000
     top = 1
     
     #Load weight
@@ -76,21 +79,30 @@ def Classifier(image_path, database_version):
     tr.load(os.path.join(tree_dir, str(num_of_kpts) + TREE_FILE))
     
     '''classify the input image'''
+
     #randomly get image from the img_dir
     img = Image.open(image_path).convert('L')
     img = StandalizeImage(img, 480)
     img_data = np.asarray(img, dtype=float)
     
     #generate desc, sign and weighted sign
+    t0 = time.time()
+
     kp = Keypoint()
     #kp.load_keypoint(self.KEYPOINT_DIR, self.KEYPOINT_FILE+str(num_of_kpts))
     kp.generate_keypoint(num_of_kpts, img.size[0], img.size[1], SIGMA)
     desc = Descriptor()
     desc.generate_desc(img_data, kp.kpt)
     
+    t1 = time.time()
+
+    print t1-t0
+    
     sign = Signature()
     s = sign.generate_sign(tr,desc.desc, 10, 4)
     weighted_sign = wt.weight_sign(s)
+    
+  
     
     #vote
     d=np.empty(total)
@@ -108,13 +120,22 @@ def Classifier(image_path, database_version):
     class_name = data[best*num_in_set][2]
     class_name = class_name.split("/")[2]
     
+        
+
+    
     return best, class_name
     
-    
+
 
 if __name__ == '__main__':
+
     test_image_path = './Image/u_town/stand-image_03.jpg'
+
+    
     idx, class_folder = Classifier(test_image_path, 1)
+
+    
+     
      
     print idx, class_folder
         
